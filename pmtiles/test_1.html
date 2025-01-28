@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mappa Parco della Favorita</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+        }
+        #map {
+            height: 100vh;
+            width: 100vw;
+        }
+        .leaflet-control-layers {
+            margin-right: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <!-- Plugin Leaflet Hash -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-hash/0.2.1/leaflet-hash.min.js"></script>
+    <!-- Plugin PMTiles -->
+    <script src="https://unpkg.com/pmtiles@2.4.0/dist/index.js"></script>
+    <!-- Plugin VectorGrid necessario per PMTiles -->
+    <script src="https://unpkg.com/leaflet.vectorgrid@latest/dist/Leaflet.VectorGrid.bundled.js"></script>
+    <script>
+        // Coordinate del Parco della Favorita
+        const SW = [38.1377, 13.2897];
+        const NE = [38.203, 13.3964];
+        
+        // Inizializza la mappa con limiti geografici
+        var map = L.map('map', {
+            maxBounds: L.latLngBounds(SW, NE),
+            maxBoundsViscosity: 1.0,
+            minZoom: 10,
+            maxZoom: 18
+        }).setView([38.14074, 13.33225], 14);
+
+        // Strati base
+        var osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        var googleSatellite = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+            attribution: 'Google Satellite',
+            subdomains: ['mt0','mt1','mt2','mt3']
+        });
+
+        // Strato sovrapposto
+        var pianoFattibilita = L.tileLayer('https://palermohub.github.io/Parco_della_Favorita/pmtiles/p_fatt/{z}/{x}/{y}.png', {
+            attribution: 'Piano di Fattibilità'
+        }).addTo(map);
+
+        // Carica il file PMTiles
+        (async function() {
+            try {
+                const url = "https://palermohub.github.io/Parco_della_Favorita/pmtiles/piano.pmtiles";
+                const pmTiles = new pmtiles.PMTiles(url);
+                
+                // Crea una funzione per ottenere i tile
+                const getTile = async (z, x, y) => {
+                    const tile = await pmTiles.getZxy(z, x, y);
+                    return tile.data;
+                };
+
+                // Crea il layer vettoriale
+                const pianoUsoLayer = L.vectorGrid.protobuf(getTile, {
+                    vectorTileLayerStyles: {
+                        piano_uso: {
+                            fillColor: 'blue',
+                            fillOpacity: 0.5,
+                            color: 'blue',
+                            weight: 1
+                        }
+                    },
+                    interactive: true,
+                    getFeatureId: function(f) {
+                        return f.properties.id;
+                    },
+                    maxNativeZoom: 14,
+                    minZoom: 10,
+                    maxZoom: 18
+                }).on('click', function(e) {
+                    let properties = e.layer.properties;
+                    let content = '<b>Piano Uso</b><br>';
+                    if (properties.Zonizzazione) {
+                        content += `<b>Zonizzazione:</b> ${properties.Zonizzazione}<br>`;
+                    }
+                    if (properties.etichetta_nascosta) {
+                        content += `<b>Etichetta Nascosta:</b> ${properties.etichetta_nascosta}<br>`;
+                    }
+                    L.popup()
+                        .setLatLng(e.latlng)
+                        .setContent(content)
+                        .openOn(map);
+                });
+
+                // Aggiungi il layer alla mappa
+                pianoUsoLayer.addTo(map);
+
+                // Controlli strati
+                L.control.layers({
+                    "OpenStreetMap": osmLayer,
+                    "Google Satellite": googleSatellite
+                }, {
+                    "Piano di Fattibilità": pianoFattibilita,
+                    "Piano Uso": pianoUsoLayer
+                }).addTo(map);
+
+            } catch (error) {
+                console.error("Errore nel caricamento del PMTiles:", error);
+            }
+        })();
+
+        // Aggiungi il plugin hash
+        var hash = new L.Hash(map);
+    </script>
+
+    <!-- Nota informativa -->
+    <div style="position: absolute; bottom: 50px; left: 10px; background-color: rgba(255, 255, 255, 0.9); padding: 8px; border-radius: 5px; box-shadow: 0 0 5px rgba(0,0,0,0.2);">
+        <strong>Area delimitata:</strong> Parco della Favorita<br>
+        <small>Coordinate: 38.1377°N 13.2897°E - 38.203°N 13.3964°E</small>
+    </div>
+</body>
+</html>

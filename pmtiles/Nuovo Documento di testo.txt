@@ -1,0 +1,3 @@
+https://palermohub.github.io/Parco_della_Favorita/pmtiles/piano.pmtiles
+https://palermohub.github.io/Parco_della_Favorita/pmtiles/p_fatt/{z}/{x}/{y}.png
+https://palermohub.github.io/Parco_della_Favorita/pmtiles/p_uso/{z}/{x}/{y}.png
