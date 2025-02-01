@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mappa Piano d'uso vigente e Piano di Fattibilità</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+    }
+    .container {
+      display: flex;
+      height: 100vh;
+      width: 100vw;
+    }
+    #map1, #map2 {
+      flex: 1;
+      height: 100%;
+      position: relative;
+    }
+    .leaflet-control-layers {
+      background: white;
+      padding: 10px;
+      border-radius: 5px;
+    }
+    .legend-image {
+      position: absolute;
+      bottom: 25px;
+      right: 10px;
+      width: 50px;
+      height: auto;
+      z-index: 1000;
+      border: 2px solid #ccc;
+      border-radius: 5px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="map1"></div>
+    <div id="map2">
+      <img src="https://palermohub.opendatasicilia.it/legend/umap/comune_pa.png" alt="Comune Palermo" title="Comune Palermo" class="legend-image">
+    </div>
+  </div>
+
+  <!-- Carica gli script nell'ordine corretto -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/leaflet.sync/L.Map.Sync.min.js"></script>
+  <script src="https://unpkg.com/pmtiles@latest/dist/index.js"></script>
+
+  <script>
+    // Attendi che tutti gli script siano caricati
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Definisci i limiti geografici
+      const maxBounds = [
+        [38.12724, 13.29253],
+        [38.20812, 13.38772]
+      ];
+
+      // Inizializza le mappe
+      const map1 = L.map('map1', {
+        maxBounds: maxBounds,
+        maxBoundsViscosity: 1.0
+      }).setView([38.1750, 13.3250], 14);
+
+      const map2 = L.map('map2', {
+        maxBounds: maxBounds,
+        maxBoundsViscosity: 1.0
+      }).setView([38.1750, 13.3250], 14);
+
+      // Definisci i layer di base
+      const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+      });
+
+      const osmLayer2 = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+      });
+
+      const esriSatellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: '© Esri Satellite'
+      });
+
+      const esriSatellite2 = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: '© Esri Satellite'
+      });
+
+      // Aggiungi i layer di base iniziali
+      osmLayer.addTo(map1);
+      osmLayer2.addTo(map2);
+
+      // Definisci i layer sovrapposti
+      const pianoUsoVigente = L.tileLayer('https://palermohub.github.io/Parco_della_Favorita/pmtiles/p_uso/{z}/{x}/{y}.png', {
+        attribution: 'Piano d\'uso vigente Palermo'
+      }).addTo(map1);
+
+      const pianoFattibilita = L.tileLayer('https://palermohub.github.io/Parco_della_Favorita/pmtiles/p_fatt/{z}/{x}/{y}.png', {
+        attribution: 'Piano di Fattibilità Palermo'
+      }).addTo(map2);
+
+      // Configura i controlli dei layer
+      const baseLayersMap1 = {
+        "OpenStreetMap": osmLayer,
+        "Esri Satellite": esriSatellite
+      };
+
+      const baseLayersMap2 = {
+        "OpenStreetMap": osmLayer2,
+        "Esri Satellite": esriSatellite2
+      };
+
+      const overlayLayers1 = {
+        "Piano d'uso vigente": pianoUsoVigente
+      };
+
+      const overlayLayers2 = {
+        "Piano di Fattibilità": pianoFattibilita
+      };
+
+      L.control.layers(baseLayersMap1, overlayLayers1, { collapsed: false }).addTo(map1);
+      L.control.layers(baseLayersMap2, overlayLayers2, { collapsed: false }).addTo(map2);
+
+      // Sincronizza le mappe
+      map1.sync(map2);
+      map2.sync(map1);
+
+      // Funzione per sincronizzare i layer di base
+      const syncComplementaryBaseLayers = (sourceMap, targetMap, sourceBaseLayers, targetBaseLayers) => {
+        sourceMap.on('baselayerchange', (event) => {
+          const selectedSourceLayer = event.layer;
+          const targetLayerKey = Object.keys(targetBaseLayers).find(key => 
+            key !== selectedSourceLayer.options.attribution
+          );
+
+          if (targetLayerKey) {
+            targetMap.eachLayer((layer) => {
+              if (targetBaseLayers[layer.options.attribution]) {
+                targetMap.removeLayer(layer);
+              }
+            });
+            targetBaseLayers[targetLayerKey].addTo(targetMap);
+          }
+        });
+      };
+
+      syncComplementaryBaseLayers(map1, map2, baseLayersMap1, baseLayersMap2);
+      syncComplementaryBaseLayers(map2, map1, baseLayersMap2, baseLayersMap1);
+
+      // Funzione per caricare i layer vettoriali
+const loadVectorLayer = async (url, map, layerName) => {
+  try {
+    const protocol = new pmtiles.Protocol();
+    const pmtilesInstance = new pmtiles.PMTiles(url);
+    
+    // Inizializza il protocollo
+    protocol.add(pmtilesInstance);
+    
+    const layer = L.vectorGrid.protobuf(url, {
+      attribution: layerName,
+      vectorTileLayerStyles: {
+        default: {
+          fillColor: 'rgba(255, 255, 255, 0)',
+          color: 'rgba(0, 0, 0, 0)',
+          weight: 0
+        }
+      }
+    });
+    
+    layer.addTo(map);
+    return layer;
+  } catch (error) {
+    console.error(`Errore nel caricamento del layer ${layerName}:`, error);
+  }
+};
+
+      // Carica i layer vettoriali
+      try {
+        await loadVectorLayer('https://palermohub.github.io/Parco_della_Favorita/pmtiles/piano.pmtiles', map1, 'piano_uso');
+        await loadVectorLayer('https://palermohub.github.io/Parco_della_Favorita/pmtiles/piano.pmtiles', map2, 'piano_fattibilita');
+        await loadVectorLayer('https://palermohub.github.io/Parco_della_Favorita/pmtiles/piano.pmtiles', map2, 'viali_sentieri');
+      } catch (error) {
+        console.error('Errore nel caricamento dei layer vettoriali:', error);
+      }
+    });
+  </script>
+</body>
+</html>
