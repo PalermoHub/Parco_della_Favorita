@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block announce %}
+  <!-- Add announcement here, including arbitrary HTML -->
+   {% include "partials/logo_pa.html" %} 
+{% endblock %}
+
+{% block libs %}
+{% include "partials/script_top.html" %}
+{% include "partials/workinprogress.html" %}
+{{ super() }}
+<!-- progress bar page	-->
+{% include "partials/progress_bar.html" %}
+{% include "partials/pace.html" %}
+{% endblock %}
+
+<!--   -->
+ {% block content %}
+
+  {{ super() }}
+{% endblock %} 
+
+<!-- blocco meta tag e social -->
+{% block extrahead %} 
+<!-- Social card -->	 
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<!-- script bottom	-->
+
+{% endblock %}

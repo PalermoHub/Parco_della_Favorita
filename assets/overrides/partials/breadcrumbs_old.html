@@ -1,0 +1,61 @@
+<nav class="md-breadcrumbs" aria-label="Breadcrumbs">
+  <ol class="md-breadcrumbs__list">
+    <!-- Home link - livello 0 -->
+    <li class="md-breadcrumbs__item md-breadcrumbs__item--home">
+      <a href="{{ config.site_url }}" class="md-breadcrumbs__link">
+        <span class="md-icon md-breadcrumbs__icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8h5z"/></svg>
+        </span>
+        <span class="md-breadcrumbs__link-text">Home</span>
+      </a>
+    </li>
+    
+    {% set ns = namespace(depth=0, max_depth=9) %}
+    {% for ancestor in page.ancestors %}
+      {% set ns.depth = ns.depth + 1 %}
+      {% if ns.depth <= ns.max_depth %}
+        <li class="md-breadcrumbs__separator">/</li>
+        <li class="md-breadcrumbs__item md-breadcrumbs__item--level-{{ ns.depth }}">
+          <a href="{{ ancestor.url | url }}" class="md-breadcrumbs__link">
+            <span class="md-breadcrumbs__link-text">{{ ancestor.title }}</span>
+          </a>
+        </li>
+      {% endif %}
+    {% endfor %}
+    
+    <!-- Pagina corrente - ultimo livello -->
+    <li class="md-breadcrumbs__separator">/</li>
+    <li class="md-breadcrumbs__item md-breadcrumbs__item--active md-breadcrumbs__item--level-{{ (ns.depth + 1) if ns.depth < ns.max_depth else ns.max_depth }}">
+      <span class="md-breadcrumbs__link-text">{{ page.title }}</span>
+    </li>
+  </ol>
+</nav>
+
+<!-- Script per migliorare l'esperienza mobile con breadcrumbs lunghi -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const breadcrumbs = document.querySelector('.md-breadcrumbs');
+    if (!breadcrumbs) return;
+    
+    // Controlla se la barra dei breadcrumbs ha overflow
+    if (breadcrumbs.scrollWidth > breadcrumbs.clientWidth) {
+      breadcrumbs.classList.add('has-overflow');
+      
+      // Su mobile, scorri alla fine per mostrare l'elemento attuale
+      if (window.innerWidth <= 768) {
+        breadcrumbs.scrollLeft = breadcrumbs.scrollWidth;
+      }
+    }
+    
+    // Aggiunge un attributo data-level a ogni breadcrumb per facilitare la stilizzazione
+    const items = breadcrumbs.querySelectorAll('.md-breadcrumbs__item');
+    items.forEach((item, index) => {
+      item.setAttribute('data-depth', index);
+    });
+    
+    // Se ci sono più di 5 elementi su mobile, aggiungi classe per ottimizzazione
+    if (items.length > 5 && window.innerWidth <= 768) {
+      breadcrumbs.classList.add('md-breadcrumbs--deep');
+    }
+  });
+</script>

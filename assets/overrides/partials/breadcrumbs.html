@@ -1,0 +1,22 @@
+<nav class="md-breadcrumbs" aria-label="Breadcrumbs">
+  <ol class="md-breadcrumbs__list">
+    <li class="md-breadcrumbs__item">
+      <a href="{{ config.site_url }}" class="md-breadcrumbs__link">
+        <span class="md-breadcrumbs__link-text">Home</span>
+      </a>
+    </li>
+    {% for doc in page.ancestors %}
+      <li class="md-breadcrumbs__separator">></li>
+      <li class="md-breadcrumbs__item">
+        <a href="{{ doc.url | url }}" class="md-breadcrumbs__link">
+          <span class="md-breadcrumbs__link-text">{{ doc.title }}</span>
+        </a>
+      </li>
+    {% endfor %}
+    <li class="md-breadcrumbs__separator">></li>
+    <li class="md-breadcrumbs__item md-breadcrumbs__item--active">
+      <span class="md-breadcrumbs__link-text">{{ page.title }}</span>
+    </li>
+  </ol>
+</nav>
+

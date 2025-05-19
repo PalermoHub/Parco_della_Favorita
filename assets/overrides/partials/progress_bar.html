@@ -1,0 +1,26 @@
+<!-- Automatic page load progress bar -->
+
+<style> 
+.progress-bar {
+    background: #30373d;
+    height: 3px;
+    width: 0%;
+    position: fixed;
+    top: 0px;
+    z-index: 1000;
+}
+</style>
+
+<div class="progress-bar" id="progressBar"></div>
+
+<script type="text/javascript">
+window.addEventListener('scroll', handleScroll);
+
+function handleScroll() {
+    var winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+    var height = document.documentElement.scrollHeight - document.documentElement.clientHeight;  
+    var scrolled = (winScroll / height) * 100;
+  
+    document.getElementById("progressBar").style.width = scrolled + "%";
+}
+</script>
